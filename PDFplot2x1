@@ -1,1 +1,8 @@
 
+%let path = W:/utilities/R2SAS;#Specify the path here;
+%include "\\&path\PLOT2PDF-template.sas";#Store the PDF-template at the desired location;
+%let file = f_1_2_3_cpms_sampleplot;#Specify the file name;
+%let reporting = PRELIMINARY;#Specify the reporting effort;
+%let        gDNG = 2016Nxxxxxx_00;#Specify the DNG number;
+%let   gprotocol = 123456;#Specify the Protocol number;
+%let gpopulation = Add population here;
