@@ -1,1 +1,53 @@
+/* http://www.phusewiki.org/wiki/index.php?title=Superior_gRaphics_in_Statistical_Reports */
+%macro RScript(Rscript); 
+     data _null_;
+     file "&Rscript";
+     infile cards;
+     input cards;
+	 _infile_ = resolve(_infile_);
+     put _infile_;
+%mend;
 
+/*********************************/
+/*** Set path amd SAS filename ***/
+/*********************************/
+
+
+*%let path = d:/R2SAS;
+%let path = W:/utilities/R2SAS;
+%let reporting = PRELIMINARY;
+
+%include "\\us1dsntv005\rd-cpms-programming\utilities\R2SAS\ClinPharmPlotTemplate_05_BATCH.sas";
+/*Files file.r, file.png and file.pdf are produced*/
+/*Figure number is asigned from filename automatically*/
+
+/*reporting effort*/
+%let file = sampleplot;
+%let        gDNG = 2017Nxxxxxx_00;
+%let   gprotocol = Theoph_Sample;
+%let gpopulation = Add population here;
+/***********************/
+/*** Create R script ***/
+/***********************/;
+%RScript(&path/SCRIPTS/&file..r)
+cards4;
+#######################
+#### Begin R script ###
+#######################
+rm(list=ls(all=TRUE))
+library(devtools)
+setwd("C:/Users/pk153230/Desktop/R-Demo/")
+#install_github("pkvreddy/shinypkv",force=TRUE)
+library(methods)
+library(shinypkv)
+library(shiny)
+#shiny_pkv(options="none")
+#shiny_pkv(options="sas2csv")
+shiny_pkv(options="nm_dataviz")
+library(methods)
+;;;;
+run;
+x "cd C:\Program Files\R\R-3.3.2\bin\x64";
+*x 'open Rstudio';
+*x "&path/SCRIPTS/&file..r";
+x "Rscript --vanilla &path/SCRIPTS/&file..r";
