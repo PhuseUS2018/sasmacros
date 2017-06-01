@@ -1,1 +1,812 @@
+/*******************************************************************************
+|
+| Program Name: ClinPharmPlotTemplate_05_BATCH.sas
+|
+| Program Version: 1
+|
+| MDP/Protocol ID:
+|
+| Program Purpose: To setup TEMPLATES/OPTIONS for TFL Displays
+|                  Uses batch LOCAL filename in path with %xincl()
+|
+| SAS Version: 9.2
+|
+| Created By: Daren Austin      
+| Date:       20/DEC/2016           
+|
+|*******************************************************************************
+| Macros used:
+|
+| Parameters: 	
+|				
+|*******************************************************************************
+| Change Log
+|
+| Modified By:             Daren Austin
+| Date of Modification:    12/01/2017
+|
+| Modification ID:         dja17709
+| Reason For Modification: Corrected bug in Table that omitted &sysdate
+|
+|*******************************************************************************
+| QC Reviewer:	Isabelle Pouliquen	
+| Date:				XX-XXX-2016
+| Items to QC:				
+| 1) Macro Variables		[PASS/FAIL]
+| 2) Macro Parameters		[PASS/FAIL]
+| 6) Other (list)			[PASS/FAIL]
+|
+********************************************************************************/
+
+
+/********************************************/
+/*** Send graphics to FINAL\PNG directory ***/
+/********************************************/
+ods listing gpath="&path\OUTPUTS\&reporting\PNG";
+ods escapechar='^';
+options helpbrowser=sas nonumber nodate;
+
+/**************************************/
+/*** Macro to include remote script ***/
+/**************************************/
+%macro xincl(file=file);
+ %global inclpath inclfilename; 
+ %let inclfilename = &file;
+ %let inclpath = &path\SCRIPTS\TFL;
+ %include "&path\SCRIPTS\TFL\&file";
+%mend;
+
+/***************************************/
+/***     TFL Header Setup Macro    ***/
+/***************************************/
+
+%macro TFLHeader(
+	   DNG=2015N######,
+       PROTOCOL=GSK1234567,
+       POPULATION=Analysis population);
+ 	%global gDNG gprotocol gpopulation; /*Global Macro Variables*/
+
+	%let gDNG=&DNG.;
+	%let gPROTOCOL=&PROTOCOL.;
+	%let gPOPULATION=&POPULATION.;
+
+	title;
+	footnote;
+
+%mend TFLHeader;
+
+
+proc template;
+ define crosstabs Base.Freq.CrossTabFreqs;
+  define header tableof;
+   text "Table of " _row_label_ " by " _col_label_;
+  end;
+  define header rowsheader;
+   text _row_label_ / _row_label_ ^= ' ';
+   text _row_name_;
+  end; 
+
+  define header colsheader;
+   text _col_label_ / _col_label_ ^= ' ';
+   text _col_name_;
+  end;
+cols_header=colsheader;
+rows_header=rowsheader;
+header tableof;
+end;
+run; 
+
+/************************************/
+** Macro that Generates TFL number **;
+/************************************/
+%macro tflNumber(file=abc_1_pk.pdf);
+ %global tflnum;
+data x;
+ name = "&file";
+ length chars1-chars15 $15;
+  array chars(15) $;
+  do _i = 1 to dim(chars);
+   chars[_i] = scan(name,_i,'_');
+  end;
+
+/* Add list of names here pk, pd, cpms, qsci,... */
+ if chars3 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = chars2;
+ if chars4 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = catx('.',of chars2-chars3);
+ if chars5 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = catx('.',of chars2-chars4);
+ if chars6 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = catx('.',of chars2-chars5);
+ if chars7 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = catx('.',of chars2-chars6);
+ if chars8 in ('pk' 'pd' 'cp' 'cpms' 'cs' 'qsci') then num = catx('.',of chars2-chars7);
+
+ call symput('tflnum', strip(num));
+run;
+%mend;
+
+/*****************************/
+*** MACRO to Generate TABLE **;
+/****************************/
+
+%macro PDFtable(
+ 	file=abc_11_1_pk.pdf,
+ 	title=Add Title,
+ 	footnote= ,
+ 	tablecmd=%str(proc freq data=sashelp.cars; table DriveTrain*cylinders; run;)
+	);
+
+%tflNumber(file=&file)
+
+options orientation=landscape papersize=a4 nodate nonumber;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+ods noproctitle;
+ods pdf style=journal;
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+
+ title;
+ footnote;
+ title1 justify=center "^S={font=('Arial',10pt, Bold)}CONFIDENTIAL" justify=right "^S={font=('Arial',10pt, Bold)}&gDNG";
+ title2 justify=left height=10pt F=ARIAL "Protocol: &gprotocol" justify=right "Page ^{thispage} of ^{lastpage}";
+ title3 justify=left height=10pt F=ARIAL "Population: &gpopulation";
+ title4 justify=left height=15pt F=ARIAL "  "; 
+ title5 justify=center height=12pt F=ARIAL "Table &tflnum";
+ title6 justify=center height=12pt F=ARIAL "&title";
+ footnote justify=left height=8pt F=ARIAL "&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime.";
+
+proc template;
+ define crosstabs Base.Freq.CrossTabFreqs;
+  define header tableof;
+   text "Table of " _row_label_ " by " _col_label_;
+  end;
+  define header rowsheader;
+   text _row_label_ / _row_label_ ^= ' ';
+   text _row_name_;
+  end; 
+
+  define header colsheader;
+   text _col_label_ / _col_label_ ^= ' ';
+   text _col_name_;
+  end;
+cols_header=colsheader;
+rows_header=rowsheader;
+header tableof;
+end;
+run; 
+
+&tablecmd;
+
+title;
+footnote;
+options topmargin="0in" bottommargin="0in" leftmargin="0in" rightmargin="0in";
+
+ods pdf close;
+%mend;
+
+/********************************/
+*** MACRO to Generate LISTING **;
+/*******************************/
+
+%macro PDFlisting(
+	file=abc123_1_listing_test_01.pdf,
+ 	title=Add Title,
+  	footnote= ,
+	listingcmd=%str(proc print data=sashelp.cars (obs=10); run;)
+	);
+
+%tflNumber(file=&file)
+
+options orientation=landscape papersize=a4 nodate;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+ods noproctitle;
+ods pdf style=journal;
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+
+ title;
+ footnote;
+ title1 justify=center "^S={font=('Arial',10pt, Bold)}CONFIDENTIAL" justify=right "^S={font=('Arial',10pt, Bold)}&gDNG";
+ title2 justify=left height=10pt F=ARIAL "Protocol: &gprotocol" justify=right "Page ^{thispage} of ^{lastpage}";
+ title3 justify=left height=10pt F=ARIAL "Population: &gpopulation";
+ title4 justify=left height=15pt F=ARIAL "  "; 
+ title5 justify=center height=12pt F=ARIAL "Listing &tflnum";
+ title6 justify=center height=12pt F=ARIAL "&title";
+ footnote justify=left height=8pt F=ARIAL "&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime.";
+
+&listingcmd;
+
+title;
+footnote;
+options topmargin="0in" bottommargin="0in" leftmargin="0in" rightmargin="0in";
+
+ods pdf close;
+%mend;
+
+/*********************************************/
+*** MACRO to Generate One Figure on One Page**;
+/*********************************************/
+
+%macro PDFplot1x1(
+	file=abc123_1_figure_test_1x1_01.pdf,
+ 	title=Add Title,
+	footnote= ,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=1
+	);
+
+%tflNumber(file=&file)
+
+options helpbrowser=sas;
+ods escapechar='^';
+options orientation=landscape papersize=a4 nodate nonumber;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+title;
+footnote;
+
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0.0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0.0in x=8.5in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;   	ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in;   	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+/*ods region width=11in height=0.5in x=0.5in y=6.5in;		*/
+/*ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; */
+
+/* Plot single figure */
+ods graphics / border=off width=7in height=5in;
+ods region width=10in height=6in x=0.5in y=1in;
+
+
+&plotcmd1;
+
+title;
+footnote;
+ods region width=11in height=0.5in x=0.5in y=6.5in;		
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+ods pdf startpage=now;
+ods pdf close;
+%mend;
+
+/***************************************************/
+*** MACRO to Generate Two Figures One on each Page**;
+/***************************************************/
+
+%macro PDFplot1x1TwoPage(
+	file=abc123_1_figure_test_1x1_two_page_01.pdf,
+ 	title=Add Title,
+  	footnote= ,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd2=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=2
+	);
+
+%tflNumber(file=&file)
+options helpbrowser=sas;
+ods escapechar='^';
+options orientation=landscape papersize=a4 nodate nonumer;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+
+title;
+footnote;
+
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/* Plot first page figure */
+ods graphics / border=off width=7in height=5in;
+ods region width=10in height=6in x=0.5in y=1in;
+
+&plotcmd1;
+
+title;
+footnote;
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+ods layout end;
+
+ods pdf startpage=now;
+
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/* Plot second page figure */
+ods graphics / border=off width=7in height=5in;
+
+ods region width=10in height=6in x=0.5in y=1in;
+
+&plotcmd2;
+title;
+footnote;
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+ods layout end;
+
+ods pdf startpage=now;
+ods pdf close;
+ods region width=10in height=6in x=0.5in y=1in;
+%mend;
+
+/**********************************************/
+*** MACRO to Generate Two Figures on One Page**;
+/**********************************************/
+
+%macro PDFplot2x1(
+	file=abc123_1_figure_test_2x1_01.pdf,
+ 	title=Add Title,
+  	footnote= ,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd2=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=1
+	);
+
+%tflNumber(file=&file)
+options helpbrowser=sas;
+ods escapechar='^';
+options orientation=landscape papersize=a4 nodate;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+
+title;
+footnote;
+
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+/*ods region width=11in height=0.5in x=0.5in y=6.5in;*/
+/*ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; */
+
+/********************/
+/* plot two figures */
+/********************/
+ods graphics / border=off width=4in height=4.5in;
+
+ods region width=5in height=6in x=0.5in y=1.5in;
+
+ &plotcmd1;
+
+ods region width=5in height=6.5in x=5in y=1.5in;
+
+ &plotcmd2;
+
+title;
+footnote;
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+ods pdf startpage=now;
+ods pdf close;
+ods region width=10in height=6in x=0.5in y=1in;
+%mend;
+
+/***********************************************/
+*** MACRO to Generate Two Figures on Each Page**;
+/***********************************************/
+
+%macro PDFplot2x2(
+	file=abc123_1_figure_test_2x2_01.pdf,
+ 	title=Add Title,
+  	footnote= ,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd2=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd3=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd4=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=1
+	);
+
+%tflNumber(file=&file)
+options helpbrowser=sas;
+ods escapechar='^';
+options orientation=landscape papersize=a4 nodate;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+
+title;
+footnote;
+
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/*********************/
+/* plot four figures */
+/*********************/
+ods graphics / border=off width=3in height=2.25in;
+
+/*** first plot top left ***/
+ods region width=5in height=3in x=0.625in y=1in;
+
+ &plotcmd1;
+
+/*** second plot top right ***/
+ods region width=5in height=3in x=5.125in y=1in;
+
+ &plotcmd2;
+
+/*** third plot bottom left ***/
+ods region width=5in height=3in x=0.625in y=3.5in;
+
+ &plotcmd3;
+
+/*** fourth plot bottom right ***/
+ods region width=5in height=3in x=5.125in y=3.5in;
+
+ &plotcmd4;
+
+title;
+footnote;
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+ods pdf close;
+ods region width=10in height=6in x=0.5in y=1in;
+%mend;
+
+/***********************************/
+*** MACRO to Generate NPDE Figures **;
+/***********************************/
+
+%macro PDFplotNPDE(
+	file=abc123_1_figure_npde_01.pdf,
+	title=Normalised Prediction Distribution Error,
+  	footnote=,
+	dataset=dataset,
+	totalpages=1
+    );
+
+%tflNumber(file=&file)
+options helpbrowser=sas;
+ods escapechar='^';
+options orientation=landscape papersize=a4 nodate;
+options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+
+title;
+footnote;
+
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/* plot four figures */
+ods graphics / border=off width=3in height=2.25in;
+ods region width=5in height=3in x=0.625in y=1in;
+
+/*** first plot top left ***/
+/* QQ plot */
+proc rank data=&dataset normal=blom out=tempQuantbase;
+ 	var NPDE; ranks npde_Quant;
+run;
+
+title 'Q-Q Plot for NPDE';
+
+proc sgplot data=tempQuantbase noautolegend;
+ 	reg x=npde_Quant y=NPDE;
+ 	xaxis label="Normal Quantiles";
+run;
+
+/*** second plot top right ***/
+ods region width=5in height=3in x=5.125in y=1in;
+title 'NPDE histogram';
+
+proc sgplot data=&dataset noautolegend;
+ * where abs(NPDE)<=3; * trimmed NPDE;
+	 histogram NPDE;
+	 density NPDE /type=normal;
+run;
+
+/*** third plot bottom left ***/
+ods region width=5in height=3in x=0.625in y=3.5in;
+title 'NPDE vs. Time';
+
+proc sgplot data = &dataset noautolegend;
+	 reg x=TIME y=NPDE/markerattrs=(size=0) lineattrs=(color=blue pattern=1) cli clm;
+	 loess x=TIME y=NPDE/smooth=0.6 lineattrs=(color=red pattern=1) markerattrs=(symbol=circle color=black);
+	 refline 0/axis=y lineattrs=(color=black pattern=1);
+	 refline 1.644 -1.644/axis=y lineattrs=(pattern=2);
+run;
+
+/*** fourth plot bottom right ***/
+ods region width=5in height=3in x=5.125in y=3.5in;
+title 'NPDE vs. PRED';
+
+proc sgplot data = &dataset noautolegend;
+	 reg x=pred y=NPDE/markerattrs=(size=0) lineattrs=(color=blue pattern=1) cli clm;
+	 loess x=pred y=NPDE/smooth=0.6 lineattrs=(color=red pattern=1) markerattrs=(symbol=circle color=black);
+	 refline 0/axis=y lineattrs=(pattern=1);
+	 refline 1.644 -1.644/axis=y lineattrs=(pattern=2);
+run;
+
+title;
+footnote;
+
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^nPlots show linear regression (blue) with 95% prediction interval (dashed lines) and loess regression (red)^n&SYSUSERID: 
+&inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+ods pdf close;
+ods region width=10in height=6in x=0.5in y=1in;
+%mend;
+
+/***********************************************/
+/*** MULTI FIGURES AND TABLES PER FLE MACROS ***/
+/***********************************************/
+/*** Table Header file ***/
+%macro TableHeader(file=abc123_1_figure_multi_page_01.pdf);
+ 	%tflNumber(file=&file);
+	  options helpbrowser=sas;
+	  ods escapechar='^';
+	  options orientation=landscape papersize=a4 nodate;
+	  options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+	  title;
+	  footnote;
+	  ods pdf style=journal;
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+%mend;
+
+%macro Table(
+ 	title=Add Title,
+  	footnote=,
+	tablecmd=%str(proc freq data=sashelp.cars; table DriveTrain*cylinders; run;)
+	);
+
+title;
+footnote;
+ods noproctitle;
+footnote;
+ title1 justify=center "^S={font=('Arial',10pt, Bold)}CONFIDENTIAL" justify=right "^S={font=('Arial',10pt, Bold)}&gDNG";
+    title2 justify=left height=10pt F=ARIAL "Protocol: &gprotocol" justify=right "Page ^{thispage} of ^{lastpage}";
+    title3 justify=left height=10pt F=ARIAL "Population: &gpopulation";
+	title4 justify=left height=15pt F=ARIAL "  "; 
+    title5 justify=center height=12pt F=ARIAL "Table &tflnum";
+	title6 justify=center height=12pt F=ARIAL "&title";
+ footnote justify=left height=8pt F=ARIAL "&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime.";
+
+&tablecmd;
+ title;
+ footnote;
+%mend;
+
+
+/*** Figure Header file ***/
+%macro FigureHeader(file=abc123_1_figure_test_multi_01.pdf);
+ %tflNumber(file=&file);
+	 options topmargin="0.5in" bottommargin="0.5in" leftmargin="0.5in" rightmargin="0.5in";
+	 options helpbrowser=sas;
+	 ods escapechar='^';
+	 options orientation=landscape papersize=a4 nodate;
+	 title;
+	 footnote;
+ods pdf file="&path.\OUTPUTS\&reporting\&file" notoc;
+%mend;
+
+/**************************/
+/*** Plot single figure ***/
+/**************************/
+%macro Figure1x1(
+	 title=Add Title,
+	 footnote= ,
+	 plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	 totalpages=1
+	 );
+
+title;
+footnote;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0.0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0.0in x=8.5in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;   	ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in;   	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/* Plot single figure */
+ods graphics / border=off width=7in height=5in;
+ods region width=10in height=6in x=0.5in y=1in;
+&plotcmd1;
+
+title;
+footnote;
+
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+ods pdf startpage=now;
+%mend;
+
+/***********************/
+/*** Plot 2x1 Figure ***/
+/***********************/
+%macro Figure2x1(
+ 	title=Add Title,
+ 	footnote=,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd2=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=1
+	);
+
+title;
+footnote;
+
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/********************/
+/* plot two figures */
+/********************/
+ods graphics / border=off width=4in height=4.5in;
+
+ods region width=5in height=6in x=0.5in y=1.5in;
+ &plotcmd1;
+
+ods region width=5in height=6.5in x=5in y=1.5in;
+ &plotcmd2;
+
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+
+title;
+footnote;
+
+ods pdf startpage=now;
+%mend;
+
+/************************************/
+/*** Plot two figures to PDF file ***/
+/************************************/
+%macro Figure2x2(
+  	title=Add Title,
+  	footnote= ,
+	plotcmd1=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd2=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd3=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	plotcmd4=%str(proc sgplot data=sashelp.cars; loess x=cylinders y=MPG_Highway/clm; run;),
+	totalpages=1
+	);
+
+title;
+footnote;
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/*********************/
+/* plot four figures */
+/*********************/
+ods graphics / border=off width=3in height=2.25in;
+
+/*** first plot top left ***/
+ods region width=5in height=3in x=0.625in y=1in;
+ &plotcmd1;
+
+/*** second plot top right ***/
+ods region width=5in height=3in x=5.125in y=1in;
+ &plotcmd2;
+
+/*** third plot bottom left ***/
+ods region width=5in height=3in x=0.625in y=3.5in;
+ &plotcmd3;
+
+/*** fourth plot bottom right ***/
+ods region width=5in height=3in x=5.125in y=3.5in;
+ &plotcmd4;
+
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^n&SYSUSERID: &inclpath.\&inclfilename &sysdate9. &systime.";
+
+title;
+footnote;
+
+ods layout end;
+%mend;
+
+
+/************************************/
+/*** NPDE figures to PDF file ***/
+/************************************/
+
+%macro FigureNPDE(
+	title=Normalised Prediction Distribution Error,
+ 	footnote=,
+	dataset=dataset,
+	totalpages=1
+    );
+
+ods layout start width=11in height=8.5in; 
+ods region width=10.5in height=0in x=0in y=0in; 		ods pdf text="^S={font=('Arial',10pt, Bold) just=center}CONFIDENTIAL";
+ods region width=2in height=0in x=8.5in y=0in; 			ods pdf text="^S={font=('Arial',10pt, Bold) just=right}&gDNG";
+ods region width=7in height=0in x=0.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=left}Protocol: &gprotocol";
+ods region width=3in height=0in x=7.5in y=0.20in;		ods pdf text="^S={font=('Arial',10pt) just=right}Page ^{thispage} of &totalpages.";
+ods region width=10.5in height=0in x=0.5in y=0.40in; 	ods pdf text="^S={font=('Arial',10pt) just=left}Population: &gpopulation";
+ods region width=10.5in height=0in x=0.5in y=0.60in;	ods pdf text="^S={font=('Arial',12pt) just=center}Figure &tflnum^n&title"; 
+
+/* plot four figures */
+ods graphics / border=off width=3in height=2.25in;
+ods region width=5in height=3in x=0.625in y=1in;
+
+/*** first plot top left ***/
+/* QQ plot */
+proc rank data=&dataset normal=blom out=tempQuantbase;
+ 	var NPDE; ranks npde_Quant; run;
+
+title 'Q-Q Plot for NPDE';
+proc sgplot data=tempQuantbase noautolegend;
+	 reg x=npde_Quant y=NPDE;
+	 xaxis label="Normal Quantiles";
+run;
+
+/*** second plot top right ***/
+ods region width=5in height=3in x=5.125in y=1in;
+title 'NPDE histogram';
+proc sgplot data=&dataset noautolegend;
+	 * where abs(NPDE)<=3; * trimmed NPDE;
+	 histogram NPDE;
+	 density NPDE /type=normal;
+run;
+
+/*** third plot bottom left ***/
+ods region width=5in height=3in x=0.625in y=3.5in;
+title 'NPDE vs. Time';
+proc sgplot data = &dataset noautolegend;
+	 reg x=TIME y=NPDE/markerattrs=(size=0) lineattrs=(color=blue pattern=1) cli clm;
+	 loess x=TIME y=NPDE/smooth=0.6 lineattrs=(color=red pattern=1) markerattrs=(symbol=circle color=black);
+	 refline 0/axis=y lineattrs=(color=black pattern=1);
+	 refline 1.644 -1.644/axis=y lineattrs=(pattern=2);
+run;
+
+/*** fourth plot bottom right ***/
+ods region width=5in height=3in x=5.125in y=3.5in;
+title 'NPDE vs. PRED';
+proc sgplot data = &dataset noautolegend;
+	 reg x=pred y=NPDE/markerattrs=(size=0) lineattrs=(color=blue pattern=1) cli clm;
+	 loess x=pred y=NPDE/smooth=0.6 lineattrs=(color=red pattern=1) markerattrs=(symbol=circle color=black);
+	 refline 0/axis=y lineattrs=(pattern=1);
+	 refline 1.644 -1.644/axis=y lineattrs=(pattern=2);
+run;
+
+title;
+footnote;
+
+ods region width=11in height=0.5in x=0.5in y=6.5in;
+ods pdf text="&footnote^nPlots show linear regression (blue) with 95% prediction interval (dashed lines) and loess regression (red)^n&SYSUSERID: 
+&inclpath.\&inclfilename &sysdate9. &systime."; 
+
+ods layout end;
+%mend;
 
