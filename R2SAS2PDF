@@ -1,1 +1,132 @@
+/*******************************************************************************
+|
+| Program Name: R2SAS2PDF.sas
+|
+| Program Version: 01
+|
+| MDP/Protocol ID:
+|
+| Program Purpose: To create R plots to pdf using SAS template
+|
+| SAS Version: 9.2
+|
+| Created By: Daren Austin      
+| Date:       16/DEC/2016           
+|
+|*******************************************************************************
+| Macros used: %RScript
+|
+| Parameters: 	
+|				
+|*******************************************************************************
+| Change Log
+|
+| Modified By:
+| Date of Modification:
+|
+| Modification ID:
+| Reason For Modification:
+|
+|*******************************************************************************
+| QC Reviewer:	
+| Date:				        XX-XXX-2016
+| Items to QC:				
+| 1) Macro Variables		[PASS/FAIL]
+| 2) Macro Parameters		[PASS/FAIL]
+| 6) Other (list)			[PASS/FAIL]
+|
+******************************************
+/* http://www.phusewiki.org/wiki/index.php?title=Superior_gRaphics_in_Statistical_Reports */
+%macro RScript(Rscript); 
+     data _null_;
+     file "&Rscript";
+     infile cards;
+     input cards;
+	 _infile_ = resolve(_infile_);
+     put _infile_;
+%mend;
+
+/*********************************/
+/*** Set path amd SAS filename ***/
+/*********************************/
+
+
+*%let path = d:/R2SAS;
+%let path = W:/utilities/R2SAS;
+%let reporting = PRELIMINARY;
+
+%include "\\us1dsntv005\rd-cpms-programming\utilities\R2SAS\ClinPharmPlotTemplate_05_BATCH.sas";
+/*Files file.r, file.png and file.pdf are produced*/
+/*Figure number is asigned from filename automatically*/
+
+/*reporting effort*/
+%let file = sampleplot;
+%let        gDNG = 2017Nxxxxxx_00;
+%let   gprotocol = Theoph_Sample;
+%let gpopulation = Add population here;
+
+/***********************/
+/*** Create R script ***/
+/***********************/
+%RScript(&path/&file..r)
+cards4;
+
+#######################
+#### Begin R script ###
+#######################
+
+##################################################################################
+#################### LINES ARE LIMITED TO 80 CHARACTERS ONLY #####################
+##################################################################################
+
+setwd("W:/utilities/R2SAS/")
+Theoph <- read.csv("Theoph.csv")
+xmax<-max(Theoph$Time)
+ymax<-max(Theoph$conc)
+png("sampleplot.png",width=800, height=500)
+plot(Theoph$Time,Theoph$conc,type = 'o', 
+     xlab = 'Time in Hours',xlim=range(0:xmax),
+     ylab="Concentration in ng/mL",ylim=c(1, ymax),log="y",)
+
+dev.off()
+ 
+####################
+### END R SCRIPT ###
+####################
+;;;;
+run;
+%put &path;
+%put &path/&file..r;
+/************************/
+/*** Execute R script ***/
+/************************/
+x "cd C:\Program Files\R\R-3.4.0\bin\x64"; /**specify the path where R is installed on PC**/;
+
+x "Rscript --vanilla &path/&file..r";
+
+/*************************************************/
+/*** Generate pdf output using PNG file from R ***/
+/*************************************************/
+%PDFplot1x1(
+file=&file.1.pdf,
+title=%str(Sample Plot),
+plotcmd1=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.1.png'}";)
+);
+
+%PDFplot2x1(
+file=&file.2.pdf,
+title=%str(Sample Plot),
+plotcmd1=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.2.png'}";),
+plotcmd2=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.2.png'}";)
+);
+
+/*** Sameple 2x2 using same plot 4x ***/
+%PDFplot2x2(
+file=&file.3.pdf,
+title=%str(Sample Plot),
+plotcmd1=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.3.png'}";),
+plotcmd2=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.3.png'}";),
+plotcmd3=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.3.png'}";),
+plotcmd4=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.3.png'}";)
+);
 
