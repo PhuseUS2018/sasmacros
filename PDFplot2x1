@@ -1,4 +1,3 @@
-
 %let path = W:/utilities/R2SAS;#Specify the path here;
 %include "\\&path\PLOT2PDF-template.sas";#Store the PDF-template at the desired location;
 %let file = f_1_2_3_cpms_sampleplot;#Specify the file name;
@@ -6,3 +5,10 @@
 %let        gDNG = 2016Nxxxxxx_00;#Specify the DNG number;
 %let   gprotocol = 123456;#Specify the Protocol number;
 %let gpopulation = Add population here;
+
+%PDFplot1x1(
+file=&file.1.pdf,
+title=%str(Sample Plot),
+plotcmd1=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.1.png'}";)
+plotcmd2=%str(ods pdf text="^S={just=center preimage='&path/OUTPUTS/&reporting/PNG/&file.2.png'}";)
+);
