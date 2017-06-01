@@ -1,0 +1,20 @@
+/*************************************/
+/*** Set path for reporting effort ***/
+/*************************************/
+%let path = C:\SAS4CPMS;
+/*******************************/
+/*** Create Reporting Effort ***/
+/*******************************/
+options noxwait;
+x "mkdir &path";
+x "mkdir &path\Analyses";
+x "mkdir &path\Archive";
+x "mkdir &path\Datasets";
+x "mkdir &path\Datasets\Data_source";
+x "mkdir &path\Datasets\Data_derived";
+x "mkdir &path\Documents";
+x "mkdir &path\Outputs";
+x "mkdir &path\Outputs\Preliminary";
+x "mkdir &path\Outputs\Final";
+x "mkdir &path\Report";
+x "mkdir &path\Scripts";
