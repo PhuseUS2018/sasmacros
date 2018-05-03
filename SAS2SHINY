@@ -11,21 +11,10 @@
 /*********************************/
 /*** Set path amd SAS filename ***/
 /*********************************/
-
-
 *%let path = d:/R2SAS;
 %let path = W:/utilities/R2SAS;
 %let reporting = PRELIMINARY;
 
-%include "\\us1dsntv005\rd-cpms-programming\utilities\R2SAS\ClinPharmPlotTemplate_05_BATCH.sas";
-/*Files file.r, file.png and file.pdf are produced*/
-/*Figure number is asigned from filename automatically*/
-
-/*reporting effort*/
-%let file = sampleplot;
-%let        gDNG = 2017Nxxxxxx_00;
-%let   gprotocol = Theoph_Sample;
-%let gpopulation = Add population here;
 /***********************/
 /*** Create R script ***/
 /***********************/;
