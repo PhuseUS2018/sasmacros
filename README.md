@@ -20,9 +20,7 @@ A directory structure for reporting is standardized for all reporting efforts
 
 ![]({{site.baseurl}}/)![reporting structure]({{site.baseurl}}//reportin.png)
 ### Contacts
--Daren Austin -CPMS,GSK,UK
-
--Pragathi Kotha Venkata -CPMS,GSK,US
+-Pragathi Kotha Venkata -GSK,US
 
 ### References: 
 [1][ https://github.com/cpms-gsk/sasmacros/blob/master/R2SAS ]( https://github.com/cpms-gsk/sasmacros/blob/master/R2SAS )
