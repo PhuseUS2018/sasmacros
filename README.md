@@ -33,6 +33,6 @@ A directory structure for reporting is standardized for all reporting efforts
 
 [5] [https://pkvreddy.github.io/pkv/](https://pkvreddy.github.io/pkv/)
 
-[6][https://github.com/cpms-gsk/sasmacros/blob/master/PLOT2PDF-template](https://github.com/PhuseUS2018/sasmacros/blob/master/PLOT2PDF-template) 
+[6][https://github.com/PhuseUS2018/sasmacros/blob/master/PLOT2PDF-template](https://github.com/PhuseUS2018/sasmacros/blob/master/PLOT2PDF-template) 
 
 [7][https://github.com/PhuseUS2018/sasmacros/blob/master/SAS2SHINY](https://github.com/PhuseUS2018/sasmacros/blob/master/SAS2SHINY)
