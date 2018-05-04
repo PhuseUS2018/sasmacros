@@ -23,16 +23,16 @@ A directory structure for reporting is standardized for all reporting efforts
 -Pragathi Kotha Venkata -GSK,US
 
 ### References: 
-[1][ https://github.com/cpms-gsk/sasmacros/blob/master/R2SAS ]( https://github.com/cpms-gsk/sasmacros/blob/master/R2SAS )
+[1][ https://github.com/PhuseUS2018/sasmacros/blob/master/R2SAS ]( https://github.com/PhuseUS2018/sasmacros/blob/master/R2SAS )
 
-[2] [https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot1x1 ](https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot1x1 )
+[2] [https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot1x1 ](https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot1x1 )
 
-[3][https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot2x1 ](https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot2x1 ) 
+[3][https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot2x1 ](https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot2x1 ) 
 
-[4][https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot2x2 ](https://github.com/cpms-gsk/sasmacros/blob/master/PDFplot2x2 ) 
+[4][https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot2x2 ](https://github.com/PhuseUS2018/sasmacros/blob/master/PDFplot2x2 ) 
 
 [5] [https://pkvreddy.github.io/pkv/](https://pkvreddy.github.io/pkv/)
 
-[6][https://github.com/cpms-gsk/sasmacros/blob/master/PLOT2PDF-template](https://github.com/cpms-gsk/sasmacros/blob/master/PLOT2PDF-template) 
+[6][https://github.com/cpms-gsk/sasmacros/blob/master/PLOT2PDF-template](https://github.com/PhuseUS2018/sasmacros/blob/master/PLOT2PDF-template) 
 
-[7][https://github.com/cpms-gsk/sasmacros/blob/master/SAS2SHINY](https://github.com/cpms-gsk/sasmacros/blob/master/SAS2SHINY)
+[7][https://github.com/PhuseUS2018/sasmacros/blob/master/SAS2SHINY](https://github.com/PhuseUS2018/sasmacros/blob/master/SAS2SHINY)
